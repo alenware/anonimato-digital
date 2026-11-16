@@ -39,6 +39,14 @@ done
 - `autoProxy` puede propagar la configuración HTTP de Windows. Cada cliente decide qué variables acepta y aplica sus propias exclusiones. Un valor puede contener credenciales. El bloque imprime solo los nombres de las variables definidas. [Consideraciones de autoProxy](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting)
 - `dnsTunneling` cambia cómo WSL entrega las consultas DNS a Windows. Si falla la resolución, comprueba `getent ahosts github.com >/dev/null` desde Linux. El éxito acredita que Linux resolvió ese nombre. Para saber por dónde salió la consulta, comprueba el resolver en el contexto de la aplicación. [DNS en WSL](https://learn.microsoft.com/en-us/windows/wsl/networking#dns-tunneling)
 
+## DNS efectivo y modo de red
+
+Lee `/etc/resolv.conf` y los ajustes relevantes de `/etc/wsl.conf` y `.wslconfig` si existen. La ausencia de `.wslconfig` no basta para certificar el modo activo: usa `wslinfo --networking-mode` cuando esté disponible y registra la versión de WSL.
+
+`10.255.255.254` es la dirección predeterminada del resolver virtual de DNS tunneling. Es compatible con que Windows gestione las consultas; no identifica al resolver público final. `getent` confirma resolución, no su recorrido. Las aplicaciones con DoH propio requieren revisión separada. [Configuración de WSL](https://learn.microsoft.com/en-us/windows/wsl/wsl-config) · [DNS tunneling y políticas NRPT](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting)
+
+Si conviven VPN, Tailscale y un cliente DNS, identifica la función de cada uno. Confirma el exit node efectivo sin volcar listas de peers o identidades. No deduzcas su uso del proceso activo. Comprueba resultados por proceso y conserva proxies con credenciales fuera de la salida.
+
 ## 2. Comprueba la salida de Linux y Windows
 
 Si aceptas que un verificador reciba tu IP, ejecuta ambas pruebas desde la distribución, con la VPN en el estado que quieras comprobar. Para comparar, puedes ejecutar los mismos comandos con `curl.exe` desde PowerShell en Windows. Conserva las direcciones en local y registra solo si observaste la salida esperada. [API de ipify](https://www.ipify.org/)

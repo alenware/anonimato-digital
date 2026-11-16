@@ -1,62 +1,66 @@
 ---
 name: anonimato-digital
-description: Audita la exposición de IP, DNS, WebRTC, ubicación, sesiones y archivos en Windows y WSL2. Úsala para diagnosticar fugas en navegadores o clientes de IA, aplicar ajustes de privacidad y verificar su efecto en el proceso y perfil afectados.
+description: Audita exposición de IP, DNS, WebRTC y ubicación en navegadores y clientes de IA sobre Windows y WSL2. Investiga discrepancias, aplica ajustes solicitados con restauración y verifica su efecto por proceso y perfil. Distingue protección de red, identidad de cuenta y contenido compartido.
 ---
 
 # Anonimato digital
 
-Investiga la exposición de datos en el entorno indicado por el usuario. Relaciona cada hallazgo con una observación reproducible, aplica los ajustes solicitados y verifica tanto el resultado de privacidad como las funciones afectadas.
+Produce un diagnóstico reproducible de exposición de datos. Explica qué observa cada prueba, qué ajuste puede corregir un hallazgo y qué evidencia permite cerrar la comprobación. No prometas anonimato ni conviertas una prueba parcial en un certificado del equipo.
 
-## Seleccionar el contexto
+## Delimitar el contexto
 
-Identifica el dato que se quiere proteger, quién puede observarlo y la aplicación implicada. Determina si la petición sale de un navegador, una CLI, un servidor de OpenCode o un intermediario del proveedor. Registra sistema, perfil, destino y estado de la VPN.
+Identifica el dato a proteger, quién puede verlo y qué proceso origina la solicitud. Distingue navegador, CLI, servidor remoto e intermediario. Registra cliente, versión, perfil, sistema, destino y estado de VPN/proxy.
 
-En WSL2, localiza el lanzador y el binario que ejecuta. Comprueba si el servidor de la aplicación corre en Linux, Windows o un sistema remoto. Una prueba debe ejecutarse en el entorno que origina la conexión.
+Aprovecha la información disponible. Pregunta solo por datos que cambien la interpretación o por una interrupción todavía no autorizada. Empieza por lectura; un diagnóstico no autoriza desconectar la VPN, reiniciar WSL o desvincular cuentas.
 
-Carga las referencias según el caso.
+Carga las guías pertinentes:
 
-- Para IP pública, DNS o WebRTC del navegador, sigue [pruebas-de-red.md](references/pruebas-de-red.md).
-- Para permisos, diagnóstico de Windows, OneDrive y controles de cuenta, sigue [guia-windows.md](references/guia-windows.md).
-- Para procesos Linux, NAT, mirrored, DNS y proxy en WSL2, sigue [guia-wsl2.md](references/guia-wsl2.md).
+- [Pruebas de red](references/pruebas-de-red.md): IP, DNS, WebRTC, IPv6 y transiciones.
+- [Windows y navegadores](references/guia-windows.md): inventario, políticas, permisos, servicios y sincronización.
+- [WSL2](references/guia-wsl2.md): proceso emisor, modo de red, resolver y proxy.
+- [Privacidad ante IA](references/privacidad-ia.md): ubicación, identidad, contenido y contexto adjunto.
+- [Evidencia y cambios](references/evidencia-y-cambios.md): resultados, restauración y cierre.
 
-## Obtener una línea base
+## Obtener evidencia
 
-Antes de modificar ajustes, registra los valores relevantes y el resultado esperado. Reutiliza la información disponible sobre la VPN o proxy para identificar su salida. Describe qué datos recibe cualquier verificador externo que vayas a utilizar.
+Registra el resultado esperado antes de interpretar el observado. Describe qué datos reciben los verificadores externos. Usa el cliente y perfil solicitado. Atribuye las capturas al usuario y conserva la incertidumbre si no se identifica el cliente.
 
-Ejecuta únicamente las pruebas que respondan a la solicitud. En el navegador, comprueba que la página haya ejecutado JavaScript y completado la detección. Una consulta HTTP desde una herramienta remota observa la conexión de esa herramienta. Usa el navegador y perfil indicados para medir su exposición.
+El recolector [audit-windows.ps1](scripts/audit-windows.ps1) es opcional: inventaría configuración sin cambiarla ni hacer consultas de red. Su JSON contiene metadatos del equipo; mantenlo fuera del repositorio público y revisa errores por sección. No comprueba políticas efectivas ni sesiones web.
 
-Registra por separado IPv4, IPv6, resolvers DNS y candidatos de WebRTC. Anota pruebas sin respuesta como inconclusas. Enmascara IP, cuentas, nombres de redes y rutas personales cuando el valor completo resulte innecesario. Inspecciona campos concretos de configuración y mantén credenciales, cookies y valores secretos de proxy fuera del informe.
+Distingue:
+1. **Configuración:** valor escrito, tipo, alcance y versión compatible.
+2. **Comportamiento:** respuesta del cliente o prueba ejecutada.
+3. **Recorrido:** evidencia de la ruta real del tráfico cuando sea necesaria.
 
-## Investigar los hallazgos
+Una consulta exitosa no demuestra su recorrido. Una captura del navegador integrado no comprueba Brave. Un proceso VPN activo no demuestra cobertura de todos los clientes. Tailscale activo no demuestra uso de un exit node.
 
-| Observación | Siguiente comprobación |
+## Diagnosticar
+
+| Observación | Investigar |
 | --- | --- |
-| IP directa pese a tener la VPN conectada | Estado de la VPN, exclusiones por aplicación o destino y ruta del proceso que originó la solicitud. |
-| IPv4 coincide y IPv6 presenta una salida inesperada | Cobertura IPv6 de la VPN y rutas del cliente. Identifica la dirección antes de atribuirla a la conexión directa. |
-| Resolver DNS inesperado | DNS seguro del navegador, configuración del cliente VPN y resolver de la aplicación. En WSL2, revisa el mecanismo de resolución del proceso. |
-| WebRTC presenta una IP pública adicional | Origen del candidato, política de manejo de IP y reglas de VPN o proxy aplicables a ese tráfico. Registra direcciones privadas y nombres mDNS por separado. |
-| Windows y WSL2 producen resultados distintos | Proceso real, modo de red, variables de proxy, exclusiones y destino de ambas pruebas. |
-| Una web obtiene ubicación o reconoce una cuenta | Permisos efectivos del sitio, sesión activa, sincronización y contenido compartido. |
-| Un archivo parece local pero depende de OneDrive | Disponibilidad sin conexión y existencia de una copia independiente de la carpeta sincronizada. |
+| IP inesperada | Proceso, proxy, exclusiones y rutas; identificar la dirección antes de declarar fuga |
+| DNS de otro proveedor | DNS seguro, NRPT, VPN, NextDNS y atribución del resolver |
+| Cero resolvers | Finalización de la prueba; usar otro verificador sin declarar éxito |
+| IPv6 sin respuesta | Error DNS, proxy, ruta o conectividad; no concluir bloqueo permanente |
+| WebRTC sin candidatos | Ejecución y permisos; registrar ausencia observada sin afirmar API deshabilitada |
+| Política sin efecto | Página de políticas, errores, precedencia, tipo, versión y reinicio requerido |
+| Linux y Windows difieren | Binario real, servidor remoto, NAT/mirrored, DNS y proxy |
+| Servicio reconoce usuario o región | Cuenta, permisos, accesos anteriores, contenido y contexto |
 
-Formula la hipótesis que conecta el hallazgo con el ajuste propuesto. Si la prueba queda pendiente, bloqueada o sin datos suficientes, resuelve esa limitación antes de concluir que existe una fuga. Una diferencia entre resolvers requiere investigar su configuración y ruta. Una etiqueta de VPN o una ciudad estimada solo aporta contexto sobre la clasificación del sitio.
+Un PTR, ASN o ciudad aporta atribución parcial. No basta para declarar que un tercero opera para la VPN, comparte centro de datos o que una advertencia es un falso positivo. Resuelve contradicciones entre inventario y pruebas.
 
-## Aplicar ajustes
+## Corregir dentro del alcance
 
-Actúa dentro del alcance solicitado y de la autorización existente. Explica el efecto concreto del cambio con lenguaje adecuado al usuario. Para personas que usan la interfaz, indica el control y su efecto. Para desarrolladores, incluye el archivo, parámetro o proceso pertinente.
+Explica el ajuste y su efecto para quien usa la interfaz; añade clave, archivo o parámetro para desarrolladores. Consulta documentación oficial vigente cuando dependa de versión.
 
-Prioriza ajustes soportados por la aplicación y comprueba su compatibilidad con la versión instalada. Conserva el valor anterior y una forma de restaurarlo. Aplica un cambio por vez cuando permita atribuir el resultado a una causa.
+Conserva existencia, tipo y valor anteriores; preserva configuración ajena. No apliques recetas generales para desactivar servicios, IPv6, actualizaciones o protección antimalware. No cambies región o idioma como sustituto de investigar ubicación.
 
-Al editar configuraciones, preserva claves ajenas al hallazgo. Comprueba también el valor efectivo en la interfaz o en el comportamiento del cliente. Una escritura exitosa solo acredita la modificación del archivo o registro.
+Verifica una copia independiente sin conexión antes de desvincular OneDrive. Coordina reinicios o pruebas de pérdida de túnel que interrumpan trabajo. Respeta autorizaciones existentes sin pedirlas de nuevo.
 
-Antes de desvincular OneDrive, comprueba que la copia independiente sea accesible sin conexión. Para cambios de WSL, identifica el alcance de `.wslconfig` y `/etc/wsl.conf`. Si hace falta `wsl --shutdown`, informa de la interrupción de las distribuciones activas y coordina el reinicio con el trabajo en curso.
+## Verificar y entregar
 
-## Verificar y cerrar
+Repite la prueba en el mismo cliente, perfil y condiciones. Comprueba llamadas tras cambios WebRTC, resolución y acceso al servicio tras cambios DNS, y funciones afectadas tras cambios Windows. Ante una regresión, restaura y verifica recuperación.
 
-Repite la prueba con el mismo cliente, perfil, destino y estado de la VPN. En páginas que puedan conservar direcciones anteriores, inicia una nueva detección desde una pestaña nueva. Registra cualquier variación de condiciones que limite la comparación.
+Clasifica cada fila: **verificada en el contexto probado**, **discrepancia**, **inconclusa** o **no ejecutada**. WebRTC sin candidatos puede estar verificado como observación; un error de prueba no puede aprobarse.
 
-Comprueba las funciones que el ajuste pueda afectar. Después de modificar WebRTC, prueba una llamada habitual. Después de modificar DNS o proxy, prueba la resolución y la conexión del cliente solicitado. Evalúa caídas y reconexiones de VPN cuando ese comportamiento forme parte del objetivo y la interrupción esté autorizada.
-
-Si el cambio falla o provoca una regresión, restaura el valor anterior y comprueba la recuperación antes de probar otra hipótesis. Conserva como pendiente cualquier prueba que no puedas ejecutar.
-
-Entrega un informe breve con el contexto, cada hallazgo, el cambio aplicado, la evidencia posterior y la forma de revertirlo. Distingue resultados verificados, discrepancias e inconclusos. Atribuye cada conclusión al contexto probado y explica lo que queda pendiente para cumplir el objetivo.
+Entrega contexto, observación, interpretación, cambio, evidencia posterior y pendientes. Separa ajustes propuestos de aplicados. No publiques IP, cuentas, capturas, redes, cookies, credenciales ni registros personales como ejemplos. No asignes porcentajes de anonimato. Limita las conclusiones a los clientes, escenarios y vías evaluados.

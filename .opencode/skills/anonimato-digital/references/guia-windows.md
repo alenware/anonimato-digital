@@ -34,6 +34,36 @@ WebRTC se usa en llamadas y otras conexiones en tiempo real. Si necesitas compro
 | Política de WebRTC | Puede modificar interfaces, rutas o transporte. Verifica las direcciones expuestas y el funcionamiento de las llamadas. [IETF RFC 8828](https://www.rfc-editor.org/rfc/rfc8828.html) |
 | Servicios de Windows | Evalúa las dependencias antes de modificarlos. El indicador NCSI interviene en la detección de conectividad usada por aplicaciones y actualizaciones. [NCSI y conectividad](https://learn.microsoft.com/en-us/troubleshoot/windows-client/networking/internet-explorer-edge-open-connect-corporate-public-network) |
 
+## Inventario local y límites
+
+El script [audit-windows.ps1](../scripts/audit-windows.ps1) emite JSON de solo lectura. Ejecútalo en Windows con PowerShell 5.1 o posterior. No requiere elevar por defecto; campos inaccesibles pueden quedar como errores o estados no disponibles. Un fallo de lectura no significa protección desactivada o activada.
+
+Comprueba `Errors`, estados `Unavailable` y valores `Unreadable` además del resto del documento. Los perfiles se buscan solo en rutas convencionales del usuario actual. `AccountRecords=0` no demuestra que no existan sesiones web. Las claves de OneDrive pueden ser restos de configuración. Un recuento de permisos no describe si están concedidos o denegados.
+
+El recolector lee preferencias locales para extraer campos seleccionados. El JSON conserva versión del sistema, idioma, zona horaria, nombres de entradas de inicio y otros metadatos; revísalo antes de compartirlo. Los índices de perfil sirven para ese inventario, no como identificadores estables entre ejecuciones.
+
+## Políticas efectivas y telemetría del navegador
+
+Abre `brave://policy`, `chrome://policy` o `edge://policy` en el navegador correspondiente. Registra versión, nombre de política, valor, origen, alcance y errores. Una clave presente en el registro no demuestra que el navegador la reconozca. Comprueba requisitos y precedencia en documentación oficial antes de modificarla.
+
+Revisa métricas, informes de errores, sugerencias de búsqueda, corrector remoto y ejecución en segundo plano cuando formen parte del objetivo. Distingue estos envíos de la conexión a un proveedor de IA. No desactives Safe Browsing o SmartScreen como ajuste genérico de privacidad.
+
+Por ejemplo, Edge `DiagnosticData` exige `REG_DWORD` y requiere reinicio. Un valor de texto `"0"` no satisface ese tipo. Si se corrige, conserva tipo y valor previos y comprueba aceptación después del reinicio acordado. Las políticas WebRTC no se deben copiar entre productos suponiendo compatibilidad. [DiagnosticData](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/DiagnosticData)
+
+En Windows, un `AllowTelemetry=0` no demuestra diagnóstico apagado en todas las ediciones. Una clave ausente tampoco demuestra recopilación máxima. Contrasta edición, política aplicable e interfaz efectiva. No uses una colección de claves como sustituto de comprobar comportamiento.
+
+## Inicio, identidad y rastros locales
+
+Revisa Run/RunOnce, carpetas de inicio, tareas relevantes y procesos activos por separado. Una entrada de inicio no acredita ejecución, y un proceso activo puede haber arrancado manualmente. No elimines entradas ni deshabilites tareas como parte del inventario.
+
+Distingue cuenta de Windows, cuenta del navegador, sesiones web, cuenta de OneDrive y credenciales guardadas por aplicaciones. Inspecciona estado o metadatos mínimos; no exportes tokens, cookies, claves ni almacenes de credenciales.
+
+Recent, Jump Lists y perfiles Wi-Fi guardados son rastros locales. Si el objetivo incluye acceso local al equipo, revisa su presencia sin volcar nombres ni contenidos innecesarios. No son prueba de que una página web los pueda leer. Borrarlos puede quitar accesos recientes o conectividad recordada; no es una corrección de fuga DNS.
+
+Antes de tocar servicios como WSearch, WpnService, TokenBroker o NCSI, documenta dependencia y efecto funcional. Su estado detenido o deshabilitado no certifica anonimato. Registra estado e inicio previos y usa [el procedimiento de restauración](evidencia-y-cambios.md).
+
+Para cuentas, ubicación y contenido ante proveedores de IA, sigue [privacidad-ia.md](privacidad-ia.md).
+
 ## Verificación y restauración
 
 Para cada ajuste, anota el perfil o la aplicación, el valor anterior, el cambio, la prueba y el resultado observado. Si aparece un problema, restaura el valor anterior desde el mismo menú y repite la prueba. En OneDrive, revisa las carpetas y los cambios pendientes antes de volver a vincular la cuenta. [Volver a vincular OneDrive](https://support.microsoft.com/en-us/onedrive/unlink-and-re-link-onedrive)

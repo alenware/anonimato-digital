@@ -1,24 +1,39 @@
 # Anonimato digital
 
-Skill de OpenCode para auditar la exposición de datos en Windows y WSL2 y aplicar ajustes de privacidad verificables. Revisa qué dirección IP presenta una conexión, qué servidores resuelven sus consultas DNS y qué información adicional expone el navegador mediante WebRTC, permisos, sesiones y archivos compartidos.
+Skill de OpenCode para revisar qué datos expone una aplicación en Windows y WSL2, investigar fugas de red y aplicar ajustes de privacidad con verificación y restauración.
 
-El flujo sirve tanto para revisar un navegador personal como para diagnosticar una CLI o un cliente de IA. Cada hallazgo se vincula al proceso, perfil y destino probados. Los cambios se acompañan de una comprobación posterior y un procedimiento para restaurar el ajuste anterior.
+Está dirigida a desarrolladores y a personas que quieren entender qué comparte su equipo. El agente explica el resultado en lenguaje cotidiano y conserva los detalles necesarios para reproducirlo: proceso, perfil, configuración, prueba y evidencia.
 
-## Alcance
+## Qué hace
 
-| Área | Qué se comprueba | Ajustes posibles |
+| Área | Comprobaciones | Resultado |
 | --- | --- | --- |
-| Red | Salida IPv4/IPv6, reglas de VPN, proxy y resolvers DNS. | Corregir exclusiones del túnel dividido, proxy del cliente o selección de DNS. |
-| Navegador | Direcciones expuestas por WebRTC, permisos de ubicación, sesiones y sincronización del perfil. | Ajustar la política de WebRTC, revocar permisos específicos y configurar un perfil independiente. |
-| Windows | Diagnóstico opcional, ubicación y portapapeles sincronizado. | Desactivar la recopilación opcional o la sincronización solicitada y verificar el estado efectivo. |
-| WSL2 | Ejecutable invocado, proceso que abre la conexión, modo NAT o mirrored y configuración de DNS y proxy. | Ajustar la configuración del cliente o evaluar cambios concretos en WSL según el problema observado. |
-| Archivos y cuentas | Carpetas de OneDrive, disponibilidad local de archivos, contenido y metadatos de adjuntos, controles de datos del servicio de IA. | Desvincular la sincronización tras verificar una copia independiente, preparar adjuntos y ajustar controles de datos. |
+| IP y VPN | Salida IPv4/IPv6 del cliente, proxy y exclusiones del túnel | Si la conexión probada utiliza la salida esperada |
+| DNS | Resolver, política NRPT de Windows, DNS seguro del navegador y resolución desde WSL2 | Proveedores observados y discrepancias; recorrido cuando existe evidencia de tráfico |
+| WebRTC | Candidatos expuestos por el navegador y permisos de la sesión | Direcciones observadas y efecto de las restricciones |
+| Windows | Edición, valores y tipos del registro, servicios, tareas y aplicaciones de inicio | Inventario local y ajustes que requieren comprobarse en su interfaz |
+| Navegadores | Políticas aceptadas, permisos, métricas, sincronización y perfiles | Diferencia entre configuración escrita y protección efectiva |
+| WSL2 | Proceso que conecta, modo de red, resolver y proxy | Diagnóstico separado de Linux y Windows |
+| Servicios de IA | Cuenta, permisos de ubicación, adjuntos y contexto del cliente | Vías de exposición que siguen existiendo con la IP protegida |
 
-La skill contiene instrucciones y guías que OpenCode interpreta con las herramientas disponibles en cada entorno. La aplicación de ajustes depende del acceso al sistema y del alcance solicitado. Las pruebas externas reciben la IP de la conexión que las consulta.
+Incluye instrucciones, procedimientos y un recolector local de Windows. Las pruebas de red se realizan con las herramientas disponibles o con capturas aportadas por el usuario. No instala una VPN ni aplica un paquete automático de cambios.
+
+## Qué significa un resultado
+
+Cada comprobación se clasifica como **verificada en el contexto probado**, **discrepancia**, **inconclusa** o **no ejecutada**.
+
+- Una IP de la VPN acredita la salida de esa solicitud, no la de todas las aplicaciones.
+- Una prueba DNS con cero servidores queda inconclusa.
+- Un proveedor distinto en la lista DNS requiere atribución. No demuestra por sí solo una fuga ni un falso positivo.
+- Un timeout IPv6 acredita un fallo de conectividad en esa prueba, no bloqueo permanente.
+- WebRTC sin candidatos expuestos es una observación válida si la prueba se ejecutó. No demuestra que la API esté deshabilitada.
+- Una cuenta iniciada permite asociar actividad al usuario aunque cambie su IP.
+
+El informe puede concluir «no se observaron fugas en los clientes y escenarios probados» cuando la evidencia lo respalde. No certifica anonimato, ubicación indetectable ni un porcentaje de protección.
 
 ## Instalación
 
-Necesitas OpenCode y acceso al navegador o entorno que quieras revisar. Para usar la skill desde este repositorio, ejecuta los siguientes comandos en PowerShell o en una terminal Linux.
+Con Git y OpenCode disponibles:
 
 ```sh
 git clone https://github.com/alenware/anonimato-digital.git
@@ -26,51 +41,61 @@ cd anonimato-digital
 opencode
 ```
 
-OpenCode descubre la skill en `.opencode/skills/anonimato-digital/SKILL.md`. Para incorporarla a otro proyecto, copia la carpeta completa `anonimato-digital`, incluido `references/`, dentro de su directorio `.opencode/skills/`. [Descubrimiento de skills](https://opencode.ai/docs/skills/)
+OpenCode descubre la skill en `.opencode/skills/anonimato-digital/SKILL.md`. Para otro proyecto, copia la carpeta completa, incluidos `references/` y `scripts/`, a su directorio `.opencode/skills/`. [Documentación de skills](https://opencode.ai/docs/skills/)
 
-En WSL2, ejecuta OpenCode para Linux desde la distribución que quieras diagnosticar. Comprueba con `command -v opencode` qué lanzador resuelve la terminal y verifica el binario al que apunta. Un lanzador ubicado en una unidad de Windows puede ejecutar la versión de Windows.
+En WSL2, comprueba con `command -v opencode` qué lanzador utilizas y qué binario ejecuta. Un lanzador en una unidad de Windows puede iniciar un proceso de Windows. El recolector PowerShell se ejecuta en Windows; los procedimientos Linux, en la distribución correspondiente.
 
 ## Uso
 
-Para revisar un navegador con la VPN conectada, puedes escribir este mensaje.
-
 ```text
-Usa @anonimato-digital para comprobar la IP pública, el DNS y WebRTC
-de mi perfil habitual de Chrome con la VPN conectada.
-Explícame qué muestra cada prueba y qué ajuste corresponde a cada hallazgo.
+Usa la skill anonimato-digital para revisar Brave con mi VPN conectada.
+Comprueba IP, DNS y WebRTC. Explica qué demuestra cada resultado,
+qué queda pendiente y qué ajustes resolverían los hallazgos.
 ```
 
-Para diagnosticar un cliente de IA en WSL2, identifica la aplicación y la salida esperada.
-
 ```text
-Usa @anonimato-digital para revisar la conexión de OpenCode desde WSL2.
-Comprueba qué proceso hace las peticiones y cómo usa la VPN y el proxy.
-Aplica las correcciones necesarias y verifica el resultado en ese cliente.
+Usa la skill anonimato-digital para diagnosticar mi cliente de IA en WSL2.
+Identifica el proceso que conecta, el DNS y el proxy.
+Distingue la exposición de red de los datos que envío con mi cuenta.
 ```
 
-## Cómo trabaja
+Para implementar correcciones, indica qué aplicaciones y ajustes quieres incluir. El agente conserva el estado anterior, aplica cambios dentro del alcance solicitado y repite las pruebas. Las pruebas de caída de VPN y los reinicios se coordinan porque pueden interrumpir trabajo activo.
 
-1. Define el cliente, perfil, destino y resultado esperado.
-2. Registra la configuración actual y ejecuta las pruebas relevantes.
-3. Investiga las discrepancias y localiza el ajuste que puede explicarlas.
-4. Aplica los cambios solicitados, conservando los valores anteriores.
-5. Repite las pruebas en las mismas condiciones y comprueba las funciones afectadas.
-6. Entrega los hallazgos, cambios, evidencias y comprobaciones pendientes.
+## Inventario local de Windows
 
-Las pruebas de navegador usan IPLeak para IP pública y DNS, y BrowserLeaks para WebRTC. La guía explica qué campos mirar y cómo interpretar una dirección inesperada, una prueba incompleta o un resultado distinto entre Windows y WSL2. [Procedimiento de pruebas](.opencode/skills/anonimato-digital/references/pruebas-de-red.md)
+Desde la raíz del repositorio, en PowerShell de Windows:
 
-## Resultado de una revisión
+```powershell
+& ./.opencode/skills/anonimato-digital/scripts/audit-windows.ps1 |
+    Set-Content -LiteralPath "$env:TEMP/anonimato-inventario.json" -Encoding UTF8
+```
 
-| Hallazgo | Cambio aplicado | Verificación | Estado |
-| --- | --- | --- | --- |
-| El navegador presenta la IP directa pese a tener la VPN conectada. | Se retira una exclusión del túnel dividido. | La prueba del mismo perfil muestra la salida esperada. | Corregido en el contexto probado. |
-| La prueba de IPv6 termina sin respuesta. | Pendiente de diagnóstico de conectividad. | La prueba carece de una respuesta válida. | Inconcluso. |
+El script consulta configuración local y emite JSON. No cambia ajustes ni realiza consultas de red. Incluye servicios, tareas seleccionadas, entradas de inicio, políticas y preferencias de perfiles convencionales de Brave, Chrome y Edge.
 
-Esta tabla ilustra el formato del informe. Las evidencias se redactan con el mínimo de datos identificables necesario. Cada resultado conserva su contexto y sus límites de observación. La asociación con una cuenta, el contenido enviado y la retención del proveedor se evalúan además de la salida de red.
+El inventario contiene información del equipo: revísalo antes de compartirlo. No exporta cookies, contraseñas, nombres de cuenta ni contenido de archivos personales. Las políticas detectadas deben verificarse dentro del navegador; los perfiles personalizados y otros usuarios quedan fuera de la detección automática.
 
-## Referencias
+## Procedimiento
 
-- [Instrucciones para el agente](.opencode/skills/anonimato-digital/SKILL.md)
-- [Pruebas de IP, DNS y WebRTC](.opencode/skills/anonimato-digital/references/pruebas-de-red.md)
-- [Configuración de Windows](.opencode/skills/anonimato-digital/references/guia-windows.md)
+1. Definir el dato a proteger, su observador y el cliente que origina la conexión.
+2. Registrar configuración y pruebas iniciales con fecha, perfil y estado de VPN.
+3. Relacionar cada discrepancia con una hipótesis comprobable.
+4. Aplicar el ajuste solicitado con respaldo del valor y tipo anteriores.
+5. Repetir la prueba y comprobar las funciones afectadas.
+6. Entregar evidencia, cambios, restauración y pendientes.
+
+Las páginas de prueba reciben la IP y datos técnicos de la sesión que las visita. Una prueba en un navegador integrado, una herramienta remota o `curl` se atribuye a ese cliente.
+
+## Validación y límites
+
+Se han ejecutado el inventario local de Windows, consultas DNS en Windows y resolución en Ubuntu bajo WSL2. También se han interpretado capturas de IPLeak y BrowserLeaks identificando el navegador de origen. Estos ejercicios validan procedimientos y criterios de lectura; no certifican otros equipos ni todas las combinaciones de VPN, versiones y perfiles.
+
+Las pruebas de caída del túnel, reconexión, tráfico por interfaz y funcionamiento después de cada corrección requieren ejecución específica. El recolector no realiza esas pruebas. Los informes personales y las capturas no forman parte del repositorio público.
+
+## Documentación
+
+- [Instrucciones de la skill](.opencode/skills/anonimato-digital/SKILL.md)
+- [Pruebas de red y criterios de evidencia](.opencode/skills/anonimato-digital/references/pruebas-de-red.md)
+- [Windows, navegadores e inventario](.opencode/skills/anonimato-digital/references/guia-windows.md)
 - [Diagnóstico de WSL2](.opencode/skills/anonimato-digital/references/guia-wsl2.md)
+- [Ubicación e identidad ante servicios de IA](.opencode/skills/anonimato-digital/references/privacidad-ia.md)
+- [Registro de cambios, restauración e informe](.opencode/skills/anonimato-digital/references/evidencia-y-cambios.md)
