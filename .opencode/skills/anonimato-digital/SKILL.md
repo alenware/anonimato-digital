@@ -5,7 +5,7 @@ description: Audita y reduce la exposición de datos de navegadores, clientes de
 
 # Privacidad y anonimato digital
 
-Skill de OpenCode para desarrolladores que necesitan saber **qué datos expone un cliente y desde qué entorno los envía**. Audita Windows, navegadores Chromium y procesos Linux en WSL2. Distingue entre el navegador, la CLI y el servidor que ejecuta las solicitudes al proveedor de IA.
+Skill de OpenCode para comprobar qué datos ven las webs y los servicios de IA cuando usas Windows o WSL2. Sirve para revisar tu navegador paso a paso o diagnosticar un cliente de IA que se ejecuta desde una terminal.
 
 ## Qué inspecciona y qué cambios aplica
 
@@ -21,10 +21,12 @@ La ejecución comienza con un diagnóstico de solo lectura. Si el usuario pide a
 
 ## Flujo de diagnóstico y verificación
 
-1. Identifica qué dato se quiere proteger y frente a quién. Distingue el sitio visitado, el proveedor de VPN, el proveedor de IA y las personas con acceso al equipo.
-2. Localiza el proceso que abre la conexión. En WSL2, `command -v opencode` y `wslinfo --networking-mode` orientan el diagnóstico. Contrasta las rutas y la configuración de proxy con la salida observada desde el proceso relevante. Una prueba con `curl` acredita la salida de ese comando hacia ese destino.
-3. Antes de modificar un ajuste, registra su valor anterior y el alcance del cambio. `.wslconfig` abarca todas las distribuciones WSL2 del usuario. `/etc/wsl.conf` corresponde a una distribución. Si el cambio requiere `wsl --shutdown`, indica la interrupción de las distribuciones activas y cómo restaurar el valor anterior.
-4. Repite la comprobación después del cambio en el mismo cliente y perfil. Si necesitas un verificador externo, indica que recibirá datos de la conexión. Registra el ajuste anterior, el aplicado, la prueba, el resultado y lo que queda por comprobar. Omite direcciones IP, cuentas, rutas personales y valores de proxy cuando baste con indicar el estado.
+1. **Elige qué vas a comprobar.** Por ejemplo, si Brave muestra la IP de salida de la VPN o si un sitio conserva permiso para usar tu ubicación. Anota el navegador y perfil, o el cliente y servidor de IA, y qué resultado esperas.
+2. **Toma una línea base con la configuración actual.** Anota si la VPN está conectada, qué salida esperas y qué ajuste está activo. Para un navegador, sigue las pruebas de [IP pública, DNS y WebRTC](references/pruebas-de-red.md). Las páginas de prueba reciben la IP desde la que las visitas. Para WSL2, identifica primero el binario y el proceso que hace la petición con la [guía de WSL2](references/guia-wsl2.md). Una prueba con `curl` mide la salida de ese comando hacia ese destino.
+3. **Usa el resultado para elegir el siguiente ajuste.** Si aparece la IP del proveedor de Internet, revisa si el navegador o cliente está excluido del túnel. Si aparece un DNS inesperado, revisa el DNS seguro del navegador y el que configura la VPN. Si solo WebRTC muestra una IP pública adicional, comprueba la política del perfil y los candidatos de conexión.
+4. **Cambia un ajuste y conserva el valor anterior.** Cuando se pida aplicarlo, usa el control del navegador, del sistema o de la VPN. En WSL2, `.wslconfig` abarca todas las distribuciones del usuario y `/etc/wsl.conf` corresponde a una sola. Si el cambio requiere `wsl --shutdown`, indica qué se interrumpe y cómo revertirlo.
+5. **Repite la misma prueba.** Usa el mismo navegador, perfil, página y estado de la VPN. Si cambiaste WebRTC, verifica también que funcione una llamada habitual. Si el resultado sigue siendo inesperado, conserva la evidencia antes de probar otro ajuste.
+6. **Entrega el resultado con su alcance.** Para cada prueba deja el resultado esperado, el observado, el ajuste aplicado y la comprobación posterior. Usa estados como «coincide», «hay una discrepancia» o «sin datos suficientes». Evita incluir IP completas, cuentas, rutas personales o valores de proxy.
 
 ## Cómo interpretar los hallazgos
 
